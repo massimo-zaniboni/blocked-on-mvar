@@ -33,6 +33,12 @@ coordinator mvar = do
     withAsync (consumer mvar) $ \c -> do
       wait c
       wait p
+      
+main :: IO ()
+main = do
+  mvar <- newEmptyMVar
+  withAsync (coordinator mvar) (wait) 
+putStrLn "done"     
 ```
 
 The producer send the informative exception ``HighNumberException``, but the ``coordinator`` job receives a generic ``BlockedIndefinitelyOnMVar``, because the producer stop working.

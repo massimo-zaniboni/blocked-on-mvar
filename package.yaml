@@ -1,0 +1,37 @@
+name:                blocked-on-mvar
+version:             0.1.0.0
+github:              "githubuser/blocked-on-mvar"
+license:             BSD3
+author:              "Massimo Zaniboni"
+maintainer:          "massimo.zaniboni@dokstar.org"
+copyright:           "2018 Massimo Zaniboni"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/blocked-on-mvar#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+executables:
+  blocked-on-mvar-exe:
+    main:                Main.hs
+    source-dirs:         src
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - safe-exceptions
+    - deepseq -any
+    - exceptions -any
+    - async -any

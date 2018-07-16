@@ -4,8 +4,11 @@ module Main where
 
 import Control.Exception.Safe
 import Control.Concurrent.Async
+import qualified Control.Monad.Catch as C
+import Control.Monad.IO.Class
 import Control.Concurrent.MVar
 import Control.Exception.Base (BlockedIndefinitelyOnMVar, BlockedIndefinitelyOnSTM)
+import Control.DeepSeq as DeepSeq
 import Data.Traversable
 import Data.List as L
 import Data.Maybe
@@ -154,6 +157,71 @@ showTest testName act resources = do
   let rr = if r then "released all resources" else "some unreleased resources"
 
   putStrLn $ testName ++ ": exited with " ++ ee ++ ", and " ++ rr
+
+-- | Acquire a resource, process, and release the resource in case of synchrounous or asynchronous exceptions.
+--   Exceptions are always re-thrown, but only synchronous exceptions (i.e error inside the processing phase)
+--   can be enriched with informative messages to the user, while asynchronous exceptions (i.e. requests of interruption from the outside)
+--   are not enriched.
+--   The code is inspired from `Control.Exception.Safe`
+--   See notes on https://haskell-lang.org/tutorial/exception-safety and https://github.com/fpco/safe-exceptions#quickstart.
+withResource
+  :: (C.MonadCatch m, C.MonadMask m, MonadIO m)
+  => m b
+  -- ^ acquire the resource
+  -> (b -> m a)
+  -- ^ process the result
+  -> (Bool
+      -- ^ True in case of succes, False in case of exception during processing
+      -> b
+      -- ^ the resource to release
+      -> m ())
+  -> (SomeException
+      -- ^ the original synchronous exception (i.e. an error inside the processing phase).
+      -> SomeException
+      -- ^ the exception to thrown, meant to contain more informative messages respect the initial exception
+     )
+  -> m a
+  -- ^ the result of the processing, or an exception 
+
+withResource acquire process release informativeException = do
+    !maybeResource <- C.try acquire
+    case maybeResource of
+      Left (e1 :: SomeException) -> C.throwM $ if isSyncException e1 then informativeException e1 else e1
+      Right !resource -> do
+        res1 <- C.try $ process resource
+        case res1 of
+            Left (e1 :: SomeException) -> do
+                liftIO $ putStrLn $ "withResource: here 1"
+                _ :: Either SomeException () <- C.try $ C.mask_ $ release False resource
+                liftIO $ putStrLn $ "withResource: here 2"
+                C.throwM $ if isSyncException e1 then informativeException e1 else e1
+            Right y -> do
+                liftIO $ putStrLn $ "withResource: here 4"
+                C.mask_ $ release True resource
+                liftIO $ putStrLn $ "withResource: here 5"
+                return y
+
+-- | Like `withResource` but the result is fully evaluated (i.e. DeepSeq)
+withResource'
+  :: (C.MonadCatch m, C.MonadMask m, MonadIO m, NFData a)
+  => m b
+  -- ^ acquire the resource
+  -> (b -> m a)
+  -- ^ process the result
+  -> (Bool
+      -- ^ True in case of succes, False in case of exception during processing
+      -> b
+      -- ^ the resource to release
+      -> m ())
+  -> (SomeException
+      -- ^ the original synchronous exception (i.e. an error inside the processing phase) 
+      -> SomeException
+      -- ^ the exception to throw, meant to contain more informative messages respect the initial exception
+     )
+  -> m a
+
+withResource' acquire process release informativeError
+    = withResource acquire (\b -> do !r <- process b; return $ DeepSeq.force r) release informativeError 
 
 main :: IO ()
 main = do

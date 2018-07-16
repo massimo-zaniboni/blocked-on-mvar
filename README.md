@@ -93,3 +93,5 @@ waitAll allJobs otherJobs
                       -- NOTE: async exceptions are generated from external threads,
                       -- so they are less informative than synchronous exceptions.
 ```
+
+I defined also ``withResource`` that is a bracket-like function, useful for seding informative exceptions to the user, and that plays niclely with `waitLL``. 

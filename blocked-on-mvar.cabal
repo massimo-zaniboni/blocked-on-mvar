@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4873d93193f28ca03dc59d3ca7335e9e526e011122cb287590e06595bc87994a
+-- hash: 066cdc0e6f78d057d47c9fbf43f1d1f41837aeda367eeca2316271804c3712eb
 
 name:           blocked-on-mvar
 version:        0.1.0.0
@@ -36,6 +36,7 @@ executable blocked-on-mvar-exe
     , deepseq
     , exceptions
     , safe-exceptions
+    , vector
   other-modules:
       Paths_blocked_on_mvar
   default-language: Haskell2010

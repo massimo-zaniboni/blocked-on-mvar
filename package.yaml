@@ -32,6 +32,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - safe-exceptions
-    - deepseq -any
-    - exceptions -any
-    - async -any
+    - deepseq
+    - exceptions
+    - async
+    - vector
